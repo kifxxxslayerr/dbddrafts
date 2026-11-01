@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PXRNX365 DBD DRAFTS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <div id="screen-start" class="screen active">
+      <div class="header">
+        <h1>PXRNX365 DBD DRAFTS</h1>
+        <p>Два коуча. $20. Пять игроков. Драфты.</p>
+      </div>
+      <div class="card center-content">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Игрок 1</label>
+            <input type="text" id="name1" placeholder="Имя 1" value="Коуч А" maxlength="20">
+          </div>
+          <div class="form-group">
+            <label>Игрок 2</label>
+            <input type="text" id="name2" placeholder="Имя 2" value="Коуч Б" maxlength="20">
+          </div>
+        </div>
+        <div class="start-actions">
+          <button class="btn btn-lg" onclick="startGame()">Начать игру</button>
+          <button class="btn btn-secondary btn-lg" onclick="showHistory()">История</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="screen-coin" class="screen">
+      <div class="header">
+        <h1>Жеребьёвка</h1>
+        <p>Кто ходит первым?</p>
+      </div>
+      <div class="card center-content coin-container">
+        <div class="coin" id="coin">
+          <div class="coin-face coin-front">?</div>
+          <div class="coin-face coin-back">?</div>
+        </div>
+        <div class="coin-result" id="coin-result">
+          <span>Нажми кнопку, чтобы подбросить монетку</span>
+        </div>
+        <button class="btn btn-lg" id="btn-flip" onclick="flipCoin()">Подбросить</button>
+        <button class="btn btn-success btn-lg" id="btn-start-draft" style="display:none" onclick="startDraft()">Начать драфт</button>
+      </div>
+    </div>
+
+    <div id="screen-draft" class="screen">
+      <div class="game-header">
+        <div class="player-panel p1" id="panel1">
+          <div class="player-header">
+            <img id="p1-avatar" class="avatar" src="" alt="">
+            <div>
+              <div class="player-name" id="p1-name">Игрок 1</div>
+              <div class="player-money">$<span id="p1-money">20</span></div>
+              <div class="player-count"><span id="p1-count">0</span>/5 игроков</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align:center">
+          <div class="text-muted" style="font-size:0.85rem; margin-bottom: 6px;">Раунд</div>
+          <div class="round-dots" id="round-dots"></div>
+        </div>
+
+        <div class="player-panel p2" id="panel2">
+          <div class="player-header">
+            <img id="p2-avatar" class="avatar" src="" alt="">
+            <div>
+              <div class="player-name" id="p2-name">Игрок 2</div>
+              <div class="player-money">$<span id="p2-money">20</span></div>
+              <div class="player-count"><span id="p2-count">0</span>/5 игроков</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress" style="width:0%"></div>
+      </div>
+
+      <div class="draft-area">
+        <div class="card team-list">
+          <h3 id="team1-title">Команда 1</h3>
+          <div class="team-players" id="team1-players"></div>
+        </div>
+
+        <div class="card auction-center">
+          <div class="status-message" id="status-msg">Ожидание...</div>
+          
+          <div class="nominated-player" id="nominated">
+            <div class="empty">Игрок появится здесь</div>
+          </div>
+
+          <div class="bid-controls" id="bid-controls" style="display:none">
+            <div class="current-bid">Текущая ставка: <strong id="current-bid">$0</strong></div>
+            
+            <div class="bid-row" style="gap: 8px; margin-bottom: 10px;" id="normal-bid-buttons">
+              <button class="btn btn-sm" onclick="quickBid(1)">+$1</button>
+              <button class="btn btn-sm" onclick="quickBid(2)">+$2</button>
+              <button class="btn btn-sm" onclick="quickBid(3)">+$3</button>
+              <button class="btn btn-sm" onclick="quickBid(4)">+$4</button>
+              <button class="btn btn-sm" onclick="quickBid(5)">+$5</button>
+            </div>
+
+            <div class="bid-row" id="normal-custom">
+              <button class="btn btn-secondary btn-sm" onclick="customBid()">Своя ставка</button>
+            </div>
+
+            <div class="bid-row" style="margin-top: 14px;" id="normal-accept">
+              <button class="btn btn-success" onclick="acceptBid()">Отдаю</button>
+            </div>
+
+            <div class="bid-row" style="margin-top: 14px; display:none; gap:12px;" id="broke-buttons">
+              <button class="btn btn-success" onclick="takeForMyself()">Забрать себе</button>
+              <button class="btn btn-secondary" onclick="giveToOpponent()">Отдать сопернику</button>
+            </div>
+          </div>
+
+          <div id="nomination-controls">
+            <button class="btn btn-lg" id="btn-nominate" onclick="nominatePlayer()">Вытянуть игрока</button>
+          </div>
+        </div>
+
+        <div class="card team-list">
+          <h3 id="team2-title">Команда 2</h3>
+          <div class="team-players" id="team2-players"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="screen-results" class="screen">
+      <div class="header">
+        <h1>Результаты драфта</h1>
+        <p id="results-subtitle">Сравнение команд</p>
+      </div>
+
+      <div class="results-grid">
+        <div class="card result-card" id="result1">
+          <div class="winner-badge" id="badge1" style="display:none">ПОБЕДИТЕЛЬ</div>
+          <img id="res1-avatar" class="avatar avatar-lg" src="" alt="">
+          <div class="player-name" id="res1-name">Игрок 1</div>
+          <div class="result-money" id="res1-money"></div>
+          <div class="team-players mt-16" id="res1-team"></div>
+        </div>
+
+        <div class="card result-card" id="result2">
+          <div class="winner-badge" id="badge2" style="display:none">ПОБЕДИТЕЛЬ</div>
+          <img id="res2-avatar" class="avatar avatar-lg" src="" alt="">
+          <div class="player-name" id="res2-name">Игрок 2</div>
+          <div class="result-money" id="res2-money"></div>
+          <div class="team-players mt-16" id="res2-team"></div>
+        </div>
+      </div>
+
+      <div class="text-center" style="margin-top: 32px;">
+        <button class="btn btn-lg" onclick="saveAndRestart()">В меню</button>
+      </div>
+    </div>
+
+    <div id="screen-history" class="screen">
+      <div class="header">
+        <h1>История игр</h1>
+        <p>Последние матчи</p>
+      </div>
+      <div class="card">
+        <div class="history-list" id="history-list">
+          <div class="text-muted text-center">Пока пусто</div>
+        </div>
+        <div class="text-center mt-24">
+          <button class="btn btn-secondary" onclick="showScreen('start')">Назад</button>
+          <button class="btn btn-danger btn-sm" style="margin-left:12px" onclick="clearHistory()">Очистить</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="made-by">
+      made by <a href="https://www.twitch.tv/kifxonlyfans" target="_blank" rel="noopener">kifx</a>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="reveal-overlay" id="reveal-overlay">
+    <div class="reveal-text">THE NEXT PLAYER IS</div>
+    <div class="reveal-name" id="reveal-name"></div>
+  </div>
+
+  <div id="winner-overlay">
+    <div class="winner-box">
+      <h2 id="winner-title">Определяем победителя</h2>
+      
+      <div class="winner-teams">
+        <div class="winner-team">
+          <div class="winner-team-name" id="win-p1">Коуч А</div>
+          <div id="win-team1" class="team-players"></div>
+        </div>
+        <div class="winner-team">
+          <div class="winner-team-name" id="win-p2">Коуч Б</div>
+          <div id="win-team2" class="team-players"></div>
+        </div>
+      </div>
+
+      <div class="winner-buttons">
+        <button class="btn" id="btn-winner1" onclick="chooseWinner(1)">Победил Коуч А</button>
+        <button class="btn btn-secondary" id="btn-draw" onclick="chooseWinner(0)">Ничья</button>
+        <button class="btn" id="btn-winner2" onclick="chooseWinner(2)">Победил Коуч Б</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="reveal-overlay" id="history-detail">
+    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; max-width: 520px; width: 90%; max-height: 80vh; overflow-y: auto;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 1.3rem; font-weight: 600;" id="hd-title">Игра</div>
+        <div class="text-muted" id="hd-date" style="margin-top: 4px;"></div>
+        <div style="margin-top: 10px; color: var(--success); font-weight: 600;" id="hd-winner"></div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div>
+          <div style="font-weight: 600; margin-bottom: 8px;" id="hd-p1"></div>
+          <div id="hd-team1" class="team-players"></div>
+        </div>
+        <div>
+          <div style="font-weight: 600; margin-bottom: 8px;" id="hd-p2"></div>
+          <div id="hd-team2" class="team-players"></div>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 24px;">
+        <button class="btn btn-secondary" onclick="closeHistoryDetail()">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="reveal-overlay" id="custom-bid-modal">
+    <div class="custom-bid-box">
+      <div class="custom-bid-title">Своя ставка</div>
+      <div class="custom-bid-sub">Текущая: $<span id="custom-bid-current">0</span></div>
+      <input type="number" id="custom-bid-input" class="custom-bid-input" min="1" placeholder="Сумма">
+      <div class="custom-bid-btns">
+        <button class="btn btn-secondary" onclick="closeCustomBid()">Отмена</button>
+        <button class="btn" onclick="confirmCustomBid()">Ставка</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="reveal-overlay" id="victory-overlay">
+    <div class="victory-box">
+      <div class="victory-title">ПОБЕДА!</div>
+      <div class="victory-name" id="victory-name"></div>
+      <div class="victory-gif">
+        <img id="victory-gif" src="" alt="" style="max-width: 280px; border-radius: 12px; margin: 16px 0;">
+      </div>
+      <button class="btn btn-lg" onclick="closeVictory()">Круто</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
