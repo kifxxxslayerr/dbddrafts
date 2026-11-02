@@ -25,13 +25,16 @@ const NICKNAMES = [
   "nightfreddygames","tom tryhard","fairythea","nothing","bor34ka","ishidaharuko","ton1uck","resolution","leoneed","supster",
   "staleks","zlody","difference","kacua72","kexit","ANONIW","t4jit","VShtamm","spiro","aiden",
   "k1rzep","Alkxli","Тритрик","Wenord","Faraday","Ferz","Vexor","haorami","ju","Skipach",
-  "monroe","Goodkan","Арима","Spiro","dabba","Romeo","aewame","GB","FoKus",
+  "monroe","Арима","dabba","Romeo","aewame","GB","FoKus",
   "Moof","Murrk","axitamy","gryyst","Medilian","Kain1az","Opkafance","Zaka","Pedro","Spitzz",
   "Knightlight","RocketDBD","Dan","Kekso","Xeno","ivn","Kayy","tec","peps","Wispy",
-  "Angelz","Jah","Zafis","note","jayden","julian","kenshi","acid","momoseventh","weejason",
+  "Angelz","Jah","Zafis","note","jayden","julian","kenshii","acid","momoseventh","weejason",
   "bucky","gustavo","delof","B4NDIT","mircht","vobbo","tylion","Outer","noah","Ward",
   "V1","PedroHZ","Obii","silhey","Mad05","MX","ratz","freeze","haze",
-  "moon","madeira","leonidas","kure","voidz","ruediger"
+  "moon","madeira","leonidas","kure","voidz","ruediger", "yujiro", "kobj", "cartney",
+  "ruyn", "neppe", "fingerguns", "madeira", "reflection", "lonut", "aki",
+  "sinter", "uselma", "raider", "bueay", "mirtex", "fasti", "ptrl", "jiggy",
+  "palle_loop", "ultra", "1lmarco", "overdose", "zynox", "daimao"
 ];
 
 function generatePlayers() {
