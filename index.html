@@ -11,29 +11,104 @@
 </head>
 <body>
   <div class="container">
-    <div id="screen-start" class="screen active">
-      <div class="header">
-        <h1>PXRNX365 DBD DRAFTS</h1>
-        <p>Два коуча. $20. Пять игроков. Драфты.</p>
+
+    <!-- START SCREEN -->
+<div id="screen-start" class="screen active">
+  <div class="header">
+    <h1>PXRNX365 DBD DRAFTS</h1>
+    <p>Два коуча. $20. Пять игроков. Драфты.</p>
+  </div>
+
+  <div class="card center-content">
+    <div class="start-actions" style="flex-direction: column; gap: 16px;">
+      <button class="btn btn-lg" onclick="showLocalForm()" style="width: 100%;">
+        Играть на одном компьютере
+      </button>
+      <button class="btn btn-secondary btn-lg" onclick="showOnlineForm()" style="width: 100%;">
+        Играть онлайн
+      </button>
+    </div>
+
+    <!-- Локальный режим -->
+    <div id="local-form" style="display: none; margin-top: 28px;">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Игрок 1</label>
+          <input type="text" id="name1" placeholder="Имя 1" value="Коуч А" maxlength="20">
+        </div>
+        <div class="form-group">
+          <label>Игрок 2</label>
+          <input type="text" id="name2" placeholder="Имя 2" value="Коуч Б" maxlength="20">
+        </div>
       </div>
-      <div class="card center-content">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Игрок 1</label>
-            <input type="text" id="name1" placeholder="Имя 1" value="Коуч А" maxlength="20">
-          </div>
-          <div class="form-group">
-            <label>Игрок 2</label>
-            <input type="text" id="name2" placeholder="Имя 2" value="Коуч Б" maxlength="20">
-          </div>
-        </div>
-        <div class="start-actions">
-          <button class="btn btn-lg" onclick="startGame()">Начать игру</button>
-          <button class="btn btn-secondary btn-lg" onclick="showHistory()">История</button>
-        </div>
+      <div class="start-actions">
+        <button class="btn btn-lg" onclick="startGame()">Начать игру</button>
+        <button class="btn btn-secondary" onclick="hideAllForms()">Назад</button>
       </div>
     </div>
 
+    <!-- Онлайн режим -->
+    <div id="online-form" style="display: none; margin-top: 28px;">
+      <div class="form-group">
+        <label>Твой ник</label>
+        <input type="text" id="player-name" placeholder="Введи ник" maxlength="20" value="Коуч">
+      </div>
+
+      <div class="start-actions" style="margin-top: 20px;">
+        <button class="btn btn-lg" onclick="createRoom()">Создать лобби</button>
+        <button class="btn btn-secondary btn-lg" onclick="showJoinForm()">Войти по коду</button>
+      </div>
+
+      <div id="join-form" style="display: none; margin-top: 24px;">
+        <div class="form-group">
+          <label>Код комнаты</label>
+          <input type="text" id="room-code" placeholder="Например K7X9" maxlength="6" style="text-transform: uppercase;">
+        </div>
+        <div class="start-actions">
+          <button class="btn btn-lg" onclick="joinRoom()">Войти</button>
+          <button class="btn btn-secondary" onclick="hideJoinForm()">Отмена</button>
+        </div>
+      </div>
+
+      <div class="start-actions" style="margin-top: 16px;">
+        <button class="btn btn-secondary btn-sm" onclick="hideAllForms()">Назад</button>
+      </div>
+    </div>
+
+    <div class="start-actions" style="margin-top: 24px;">
+      <button class="btn btn-secondary btn-sm" onclick="showHistory()">История игр</button>
+    </div>
+  </div>
+</div>
+
+    <!-- LOBBY SCREEN -->
+    <div id="screen-lobby" class="screen">
+      <div class="header">
+        <h1>Лобби</h1>
+        <p>Ожидаем второго игрока</p>
+      </div>
+
+      <div class="card center-content text-center">
+        <div style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 8px;">Код комнаты</div>
+        <div id="lobby-code" style="font-size: 2.8rem; font-weight: 700; letter-spacing: 6px; margin-bottom: 24px; color: var(--accent);"></div>
+        
+        <div id="lobby-status" style="margin-bottom: 28px; font-size: 1.1rem;">
+          Ожидаем подключения...
+        </div>
+
+        <div id="lobby-players" style="margin-bottom: 28px; color: var(--text-muted);"></div>
+
+        <button class="btn btn-lg" id="btn-start-game" style="display: none;" onclick="startMultiplayerGame()">
+          Начать игру
+        </button>
+
+        <button class="btn btn-secondary" onclick="leaveRoom()" style="margin-top: 12px;">
+          Выйти из лобби
+        </button>
+      </div>
+    </div>
+
+    <!-- COIN FLIP SCREEN -->
     <div id="screen-coin" class="screen">
       <div class="header">
         <h1>Жеребьёвка</h1>
@@ -52,6 +127,7 @@
       </div>
     </div>
 
+    <!-- DRAFT SCREEN -->
     <div id="screen-draft" class="screen">
       <div class="game-header">
         <div class="player-panel p1" id="panel1">
@@ -136,6 +212,7 @@
       </div>
     </div>
 
+    <!-- RESULTS SCREEN -->
     <div id="screen-results" class="screen">
       <div class="header">
         <h1>Результаты драфта</h1>
@@ -165,6 +242,7 @@
       </div>
     </div>
 
+    <!-- HISTORY SCREEN -->
     <div id="screen-history" class="screen">
       <div class="header">
         <h1>История игр</h1>
@@ -264,6 +342,8 @@
     </div>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

@@ -1,4 +1,17 @@
 // ==================== PLAYER POOL ====================
+const firebaseConfig = {
+  apiKey: "AIzaSyCFMwNU52pc30EsqsN-t4gW2cAeAjWrVDM",
+  authDomain: "dbd-drafts.firebaseapp.com",
+  databaseURL: "https://dbd-drafts-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "dbd-drafts",
+  storageBucket: "dbd-drafts.firebasestorage.app",
+  messagingSenderId: "144117345718",
+  appId: "1:144117345718:web:b1483715d5ae67a491e517"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
 const AVATARS = [
   'avatar1.png','avatar2.png','avatar3.png','avatar4.png','avatar5.png',
   'avatar6.png','avatar7.png','avatar8.png','avatar9.png','avatar10.png',
@@ -31,10 +44,12 @@ const NICKNAMES = [
   "Angelz","Jah","Zafis","note","jayden","julian","kenshii","acid","momoseventh","weejason",
   "bucky","gustavo","delof","B4NDIT","mircht","vobbo","tylion","Outer","noah","Ward",
   "V1","PedroHZ","Obii","silhey","Mad05","MX","ratz","freeze","haze",
-  "moon","madeira","leonidas","kure","voidz","ruediger", "yujiro", "kobj", "cartney",
-  "ruyn", "neppe", "fingerguns", "madeira", "reflection", "lonut", "aki",
-  "sinter", "uselma", "raider", "bueay", "mirtex", "fasti", "ptrl", "jiggy",
-  "palle_loop", "ultra", "1lmarco", "overdose", "zynox", "daimao"
+  "moon","madeira","leonidas","kure","voidz","ruediger","yujiro","kobj","cartney",
+  "ruyn","neppe","fingerguns","reflection","lonut","aki",
+  "sinter","uselma","raider","bueay","mirtex","fasti","ptrl","jiggy",
+  "palle_loop","ultra","1lmarco","overdose","zynox","daimao",
+  "whoyasha", "Куплинов плей", "DmitriyBale", "Kuplinov", "drxkich",
+  "DogeRox"
 ];
 
 function generatePlayers() {
@@ -68,6 +83,11 @@ let state = {
   phase: 'nominate'
 };
 
+// ==================== MULTIPLAYER VARS ====================
+let currentRoomCode = null;
+let isHost = false;
+let myPlayerNumber = 1;
+
 // ==================== UI HELPERS ====================
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -84,45 +104,25 @@ function toast(msg) {
 function updateRoundDots() {
   const container = document.getElementById('round-dots');
   if (!container) return;
-  
   let html = '';
-  for (let i = 0; i < state.maxRounds; i++) {
-    html += `<div class="round-dot ${i < state.round ? 'filled' : ''}"></div>`;
+  for (let i = 0; i < (state.maxRounds || 10); i++) {
+    html += `<div class="round-dot ${i < (state.round || 0) ? 'filled' : ''}"></div>`;
   }
   container.innerHTML = html;
 }
 
-function updateUI() {
-  document.getElementById('p1-name').textContent = state.name1;
-  document.getElementById('p2-name').textContent = state.name2;
-  document.getElementById('p1-money').textContent = state.money1;
-  document.getElementById('p2-money').textContent = state.money2;
-  document.getElementById('p1-count').textContent = state.team1.length;
-  document.getElementById('p2-count').textContent = state.team2.length;
-  document.getElementById('team1-title').textContent = state.name1;
-  document.getElementById('team2-title').textContent = state.name2;
-  document.getElementById('progress').style.width = `${(state.round / state.maxRounds) * 100}%`;
-
-  if (state.avatar1) document.getElementById('p1-avatar').src = state.avatar1;
-  if (state.avatar2) document.getElementById('p2-avatar').src = state.avatar2;
-
-  document.getElementById('panel1').classList.toggle('active', state.phase === 'nominate' ? state.currentNominator === 1 : state.currentBidder === 1);
-  document.getElementById('panel2').classList.toggle('active', state.phase === 'nominate' ? state.currentNominator === 2 : state.currentBidder === 2);
-
-  renderTeam('team1-players', state.team1);
-  renderTeam('team2-players', state.team2);
-  updateRoundDots();
-}
-
 function renderTeam(containerId, team) {
   const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!Array.isArray(team)) team = [];
+
   let html = '';
   for (let i = 0; i < 5; i++) {
     if (team[i]) {
       const p = team[i];
       html += `<div class="team-player">
-        <span>${p.name}</span>
-        <span class="cost">$${p.cost}</span>
+        <span>${p.name || '?'}</span>
+        <span class="cost">$${p.cost ?? 0}</span>
       </div>`;
     } else {
       html += `<div class="empty-slot">Слот ${i + 1}</div>`;
@@ -131,8 +131,41 @@ function renderTeam(containerId, team) {
   el.innerHTML = html;
 }
 
-// ==================== START ====================
+function updateUI() {
+  if (!state.team1) state.team1 = [];
+  if (!state.team2) state.team2 = [];
+  if (!state.pool) state.pool = [];
+
+  document.getElementById('p1-name').textContent = state.name1 || 'Игрок 1';
+  document.getElementById('p2-name').textContent = state.name2 || 'Игрок 2';
+  document.getElementById('p1-money').textContent = state.money1 ?? 20;
+  document.getElementById('p2-money').textContent = state.money2 ?? 20;
+  document.getElementById('p1-count').textContent = state.team1.length;
+  document.getElementById('p2-count').textContent = state.team2.length;
+  document.getElementById('team1-title').textContent = state.name1 || 'Команда 1';
+  document.getElementById('team2-title').textContent = state.name2 || 'Команда 2';
+  document.getElementById('progress').style.width = `${((state.round || 0) / (state.maxRounds || 10)) * 100}%`;
+
+  if (state.avatar1) document.getElementById('p1-avatar').src = state.avatar1;
+  if (state.avatar2) document.getElementById('p2-avatar').src = state.avatar2;
+
+  const isP1Active = state.phase === 'nominate' ? state.currentNominator === 1 : state.currentBidder === 1;
+  const isP2Active = state.phase === 'nominate' ? state.currentNominator === 2 : state.currentBidder === 2;
+
+  document.getElementById('panel1').classList.toggle('active', !!isP1Active);
+  document.getElementById('panel2').classList.toggle('active', !!isP2Active);
+
+  renderTeam('team1-players', state.team1);
+  renderTeam('team2-players', state.team2);
+  updateRoundDots();
+}
+
+// ==================== LOCAL START ====================
 function startGame() {
+  currentRoomCode = null;
+  isHost = false;
+  myPlayerNumber = 1;
+
   const n1 = document.getElementById('name1').value.trim() || 'Коуч А';
   const n2 = document.getElementById('name2').value.trim() || 'Коуч Б';
   if (n1 === n2) {
@@ -178,6 +211,11 @@ function startGame() {
 
 // ==================== COIN FLIP ====================
 function flipCoin() {
+  if (currentRoomCode && !isHost) {
+    toast('Монетку подбрасывает хост');
+    return;
+  }
+
   const coin = document.getElementById('coin');
   const btn = document.getElementById('btn-flip');
   const resultEl = document.getElementById('coin-result');
@@ -193,33 +231,59 @@ function flipCoin() {
     const first = Math.random() < 0.5 ? 1 : 2;
     state.firstPlayer = first;
     state.currentNominator = first;
-    
-    const winnerName = first === 1 ? state.name1 : state.name2;
-    const winnerAvatar = first === 1 ? state.avatar1 : state.avatar2;
-    
-    document.querySelector('.coin-front').textContent = first === 1 ? '1' : '2';
-    document.querySelector('.coin-back').textContent = first === 1 ? '1' : '2';
-    
-    resultEl.innerHTML = `
-      <img src="${winnerAvatar}" class="coin-result-avatar" id="coin-avatar" alt="">
-      <span>Первым ходит <strong>${winnerName}</strong></span>
-    `;
-    
-    setTimeout(() => {
-      const av = document.getElementById('coin-avatar');
-      if (av) av.classList.add('show');
-    }, 50);
-    
-    btn.style.display = 'none';
-    document.getElementById('btn-start-draft').style.display = 'inline-flex';
+    showCoinResult(first);
+
+    if (currentRoomCode && isHost) {
+      db.ref('rooms/' + currentRoomCode + '/state').update({
+        firstPlayer: first,
+        currentNominator: first,
+        coinFlipped: true
+      });
+    }
   }, 1400);
+}
+
+function showCoinResult(first) {
+  const resultEl = document.getElementById('coin-result');
+  const btn = document.getElementById('btn-flip');
+
+  const winnerName = first === 1 ? state.name1 : state.name2;
+  const winnerAvatar = first === 1 ? state.avatar1 : state.avatar2;
+
+  document.querySelector('.coin-front').textContent = first === 1 ? '1' : '2';
+  document.querySelector('.coin-back').textContent = first === 1 ? '1' : '2';
+
+  resultEl.innerHTML = `
+    <img src="${winnerAvatar}" class="coin-result-avatar show" alt="">
+    <span>Первым ходит <strong>${winnerName}</strong></span>
+  `;
+
+  btn.style.display = 'none';
+
+  if (!currentRoomCode || isHost) {
+    document.getElementById('btn-start-draft').style.display = 'inline-flex';
+  }
 }
 
 // ==================== DRAFT ====================
 function startDraft() {
+  if (currentRoomCode && !isHost) {
+    toast('Хост начинает драфт');
+    return;
+  }
+
+  if (currentRoomCode && isHost) {
+    db.ref('rooms/' + currentRoomCode).update({ status: 'draft' });
+  }
+
+  goToDraftScreen();
+}
+
+function goToDraftScreen() {
   showScreen('draft');
   updateUI();
-  setStatus(`${state.currentNominator === 1 ? state.name1 : state.name2} — вытягивай игрока`);
+  const who = state.currentNominator === 1 ? state.name1 : state.name2;
+  setStatus(`${who} — вытягивай игрока`);
   document.getElementById('bid-controls').style.display = 'none';
   document.getElementById('nomination-controls').style.display = 'block';
   document.getElementById('nominated').innerHTML = '<div class="empty">Нажми «Вытянуть игрока»</div>';
@@ -227,13 +291,20 @@ function startDraft() {
 
 function setStatus(msg, isWarning = false) {
   const el = document.getElementById('status-msg');
-  el.textContent = msg;
-  el.classList.toggle('warning', isWarning);
+  if (el) {
+    el.textContent = msg;
+    el.classList.toggle('warning', isWarning);
+  }
 }
 
 function nominatePlayer() {
+  if (currentRoomCode && myPlayerNumber !== state.currentNominator) {
+    toast('Сейчас ходит соперник');
+    return;
+  }
+
   if (state.phase !== 'nominate') return;
-  if (state.pool.length === 0) {
+  if (!state.pool || state.pool.length === 0) {
     toast('Пул игроков закончился!');
     setTimeout(() => endDraft(), 800);
     return;
@@ -250,7 +321,8 @@ function nominatePlayer() {
   state.phase = 'bidding';
   state.currentBidder = state.currentNominator;
 
-  const showReveal = Math.random() < 0.15;
+  const showReveal = Math.random() < 0.18;
+  state.showReveal = showReveal;
 
   if (showReveal) {
     const overlay = document.getElementById('reveal-overlay');
@@ -265,6 +337,8 @@ function nominatePlayer() {
   } else {
     showNominatedCard();
   }
+
+  syncState();
 }
 
 function showNominatedCard() {
@@ -283,7 +357,6 @@ function showNominatedCard() {
   const bidder = state.currentBidder;
   const other = bidder === 1 ? 2 : 1;
 
-  // Если у текущего уже 5 игроков
   if (getTeam(bidder).length >= 5) {
     if (getTeam(other).length < 5) {
       state.currentBidder = other;
@@ -292,10 +365,10 @@ function showNominatedCard() {
     } else {
       setTimeout(() => endDraft(), 600);
     }
+    syncState();
     return;
   }
 
-  // Если у текущего нет денег
   if (getMoney(bidder) < 1) {
     if (getTeam(other).length < 5) {
       state.currentBidder = other;
@@ -304,25 +377,18 @@ function showNominatedCard() {
     } else {
       setTimeout(() => endDraft(), 600);
     }
+    syncState();
     return;
   }
 
-  // Обычный случай — автоставка $1
   setStatus(`${getName(bidder)} — сделай ставку`);
-  setTimeout(() => {
-    placeBidAmount(1);
-  }, 350);
+  setTimeout(() => placeBidAmount(1), 350);
+  syncState();
 }
 
-function getName(p) {
-  return p === 1 ? state.name1 : state.name2;
-}
-function getMoney(p) {
-  return p === 1 ? state.money1 : state.money2;
-}
-function getTeam(p) {
-  return p === 1 ? state.team1 : state.team2;
-}
+function getName(p) { return p === 1 ? state.name1 : state.name2; }
+function getMoney(p) { return p === 1 ? state.money1 : state.money2; }
+function getTeam(p) { return p === 1 ? state.team1 : state.team2; }
 
 function quickBid(amount) {
   placeBidAmount(state.currentBid + amount);
@@ -343,7 +409,6 @@ function closeCustomBid() {
 function confirmCustomBid() {
   const amount = parseInt(document.getElementById('custom-bid-input').value, 10);
   closeCustomBid();
-
   if (isNaN(amount) || amount < 1) {
     toast('Введи корректную сумму');
     return;
@@ -352,9 +417,12 @@ function confirmCustomBid() {
 }
 
 function placeBidAmount(amount) {
+  if (currentRoomCode && myPlayerNumber !== state.currentBidder) {
+    toast('Сейчас ходит соперник');
+    return;
+  }
   if (state.phase !== 'bidding') return;
 
-  // Если оба уже имеют по 5 — сразу конец
   if (state.team1.length >= 5 && state.team2.length >= 5) {
     setTimeout(() => endDraft(), 400);
     return;
@@ -364,22 +432,10 @@ function placeBidAmount(amount) {
   const money = getMoney(bidder);
   const team = getTeam(bidder);
 
-  if (amount < 1) {
-    toast('Минимальная ставка $1');
-    return;
-  }
-  if (amount <= state.currentBid) {
-    toast(`Ставка должна быть выше текущей ($${state.currentBid})`);
-    return;
-  }
-  if (amount > money) {
-    toast(`Недостаточно денег (у тебя $${money})`);
-    return;
-  }
-  if (team.length >= 5) {
-    toast('У тебя уже 5 игроков');
-    return;
-  }
+  if (amount < 1) { toast('Минимальная ставка $1'); return; }
+  if (amount <= state.currentBid) { toast(`Ставка должна быть выше текущей ($${state.currentBid})`); return; }
+  if (amount > money) { toast(`Недостаточно денег (у тебя $${money})`); return; }
+  if (team.length >= 5) { toast('У тебя уже 5 игроков'); return; }
 
   state.currentBid = amount;
   state.bidOwner = bidder;
@@ -389,27 +445,30 @@ function placeBidAmount(amount) {
   const otherMoney = getMoney(other);
   const otherTeam = getTeam(other);
 
-  // У соперника уже 5 → сразу отдаём
   if (otherTeam.length >= 5) {
     resolveBid();
     return;
   }
 
-  // У соперника нет денег ИЛИ он не может перебить
   if (otherMoney < 1 || state.currentBid >= otherMoney) {
     setStatus(`${getName(bidder)} — соперник не может ответить. Забрать себе или отдать?`);
     showBrokeButtons();
     updateUI();
+    syncState();
     return;
   }
 
-  // Обычный случай
   state.currentBidder = other;
   setStatus(`${getName(other)} — перебей ставку или нажми «Отдаю»`);
   updateUI();
+  syncState();
 }
 
 function acceptBid() {
+  if (currentRoomCode && myPlayerNumber !== state.currentBidder) {
+    toast('Сейчас ходит соперник');
+    return;
+  }
   if (state.phase !== 'bidding') return;
   if (state.currentBid === 0 || state.bidOwner === null) {
     toast('Сначала нужна ставка');
@@ -434,8 +493,8 @@ function resolveBid() {
   toast(`${getName(winner)} получает ${player.name} за $${cost}`);
   hideBrokeButtons();
 
-  // Проверка сразу после добавления
   if (state.team1.length >= 5 && state.team2.length >= 5) {
+    syncState();
     setTimeout(() => endDraft(), 700);
     return;
   }
@@ -444,41 +503,42 @@ function resolveBid() {
 }
 
 function takeForMyself() {
+  if (currentRoomCode && myPlayerNumber !== state.currentBidder) {
+    toast('Сейчас ходит соперник');
+    return;
+  }
   if (getTeam(state.currentBidder).length >= 5) {
     toast('У тебя уже 5 игроков!');
     return;
   }
-
   state.bidOwner = state.currentBidder;
   state.currentBid = Math.max(state.currentBid, 1);
   resolveBid();
 }
 
 function giveToOpponent() {
+  if (currentRoomCode && myPlayerNumber !== state.currentBidder) {
+    toast('Сейчас ходит соперник');
+    return;
+  }
   const receiver = state.currentBidder === 1 ? 2 : 1;
-
   if (getTeam(receiver).length >= 5) {
     toast('У соперника уже 5 игроков!');
     return;
   }
 
   const player = { ...state.nominated, cost: 0 };
-
-  if (receiver === 1) {
-    state.team1.push(player);
-  } else {
-    state.team2.push(player);
-  }
+  if (receiver === 1) state.team1.push(player);
+  else state.team2.push(player);
 
   toast(`${getName(receiver)} получает ${player.name} бесплатно`);
   hideBrokeButtons();
 
-  // Проверка сразу после добавления
   if (state.team1.length >= 5 && state.team2.length >= 5) {
+    syncState();
     setTimeout(() => endDraft(), 700);
     return;
   }
-
   nextRound();
 }
 
@@ -502,29 +562,28 @@ function nextRound() {
   state.currentBid = 0;
   state.bidOwner = null;
   state.phase = 'nominate';
+  state.showReveal = false;
 
-  // Меняем номинирующего
   state.currentNominator = state.currentNominator === 1 ? 2 : 1;
 
-  // Заканчиваем ТОЛЬКО когда оба имеют по 5
   if (state.team1.length >= 5 && state.team2.length >= 5) {
+    syncState();
     setTimeout(() => endDraft(), 900);
     return;
   }
 
-  // Пул закончился
-  if (state.pool.length === 0) {
+  if (!state.pool || state.pool.length === 0) {
+    syncState();
     setTimeout(() => endDraft(), 900);
     return;
   }
 
-  // Если текущий уже имеет 5 — передаём ход другому
   if (getTeam(state.currentNominator).length >= 5) {
     state.currentNominator = state.currentNominator === 1 ? 2 : 1;
   }
 
-  // Если и второй тоже полный — конец
   if (getTeam(state.currentNominator).length >= 5) {
+    syncState();
     setTimeout(() => endDraft(), 900);
     return;
   }
@@ -534,42 +593,52 @@ function nextRound() {
   document.getElementById('nominated').innerHTML = '<div class="empty">Нажми «Вытянуть игрока»</div>';
   setStatus(`${getName(state.currentNominator)} — вытягивай игрока`);
   updateUI();
+  syncState();
 }
 
 function endDraft() {
   document.getElementById('btn-winner1').textContent = `Победил ${state.name1}`;
   document.getElementById('btn-winner2').textContent = `Победил ${state.name2}`;
-  
   document.getElementById('win-p1').textContent = state.name1;
   document.getElementById('win-p2').textContent = state.name2;
   
-  document.getElementById('win-team1').innerHTML = state.team1.map(p => 
+  document.getElementById('win-team1').innerHTML = (state.team1 || []).map(p => 
     `<div class="team-player"><span>${p.name}</span><span class="cost">$${p.cost}</span></div>`
   ).join('') || '<div class="text-muted">Пусто</div>';
   
-  document.getElementById('win-team2').innerHTML = state.team2.map(p => 
+  document.getElementById('win-team2').innerHTML = (state.team2 || []).map(p => 
     `<div class="team-player"><span>${p.name}</span><span class="cost">$${p.cost}</span></div>`
   ).join('') || '<div class="text-muted">Пусто</div>';
 
   document.getElementById('winner-overlay').classList.add('show');
+
+  if (currentRoomCode) {
+    db.ref('rooms/' + currentRoomCode).update({ status: 'finished' });
+  }
 }
 
 function chooseWinner(winnerSide) {
-  let winnerName;
+  let winnerName = winnerSide === 0 ? 'Ничья' : (winnerSide === 1 ? state.name1 : state.name2);
 
-  if (winnerSide === 0) {
-    winnerName = 'Ничья';
-  } else {
-    winnerName = winnerSide === 1 ? state.name1 : state.name2;
+  if (currentRoomCode) {
+    db.ref('rooms/' + currentRoomCode).update({
+      status: 'results',
+      winnerSide: winnerSide,
+      winnerName: winnerName
+    });
   }
 
+  showResults(winnerSide, winnerName);
+}
+
+function showResults(winnerSide, winnerName) {
   const entry = {
     date: new Date().toLocaleString('ru-RU'),
     p1: state.name1,
     p2: state.name2,
     winner: winnerName,
-    team1: state.team1.map(p => p.name),
-    team2: state.team2.map(p => p.name)
+    team1: (state.team1 || []).map(p => p.name),
+    team2: (state.team2 || []).map(p => p.name)
   };
 
   let history = JSON.parse(localStorage.getItem('draftHistory') || '[]');
@@ -583,13 +652,11 @@ function chooseWinner(winnerSide) {
   document.getElementById('res2-name').textContent = state.name2;
   document.getElementById('res1-avatar').src = state.avatar1;
   document.getElementById('res2-avatar').src = state.avatar2;
-
   document.getElementById('res1-money').textContent = `Остаток: $${state.money1}`;
   document.getElementById('res2-money').textContent = `Остаток: $${state.money2}`;
 
   const r1 = document.getElementById('result1');
   const r2 = document.getElementById('result2');
-  
   r1.classList.remove('winner');
   r2.classList.remove('winner');
   document.getElementById('badge1').style.display = 'none';
@@ -611,13 +678,10 @@ function chooseWinner(winnerSide) {
   renderTeam('res2-team', state.team2);
 
   const victoryTitle = document.querySelector('.victory-title');
-  if (winnerSide === 0) {
-    victoryTitle.textContent = 'НИЧЬЯ';
-  } else {
-    victoryTitle.textContent = 'ПОБЕДА!';
-  }
-
+  if (victoryTitle) victoryTitle.textContent = winnerSide === 0 ? 'НИЧЬЯ' : 'ПОБЕДА!';
+  
   document.getElementById('victory-name').textContent = winnerName;
+
   const gifs = ['win1.gif', 'win2.gif', 'win3.gif', 'win4.gif', 'win5.gif', 'win6.gif'];
   document.getElementById('victory-gif').src = gifs[Math.floor(Math.random() * gifs.length)];
   document.getElementById('victory-overlay').classList.add('show');
@@ -630,7 +694,11 @@ function closeVictory() {
 
 // ==================== HISTORY ====================
 function saveAndRestart() {
+  currentRoomCode = null;
+  isHost = false;
+  myPlayerNumber = 1;
   showScreen('start');
+  hideAllForms();
 }
 
 function showHistory() {
@@ -647,7 +715,9 @@ function showHistory() {
           <div class="date">${h.date}</div>
         </div>
         <div style="text-align:right">
-          <div class="history-winner">Победил: ${h.winner}</div>
+          <div class="history-winner ${h.winner === 'Ничья' ? 'draw' : ''}">
+            ${h.winner === 'Ничья' ? 'Ничья' : 'Победил: ' + h.winner}
+          </div>
         </div>
       </div>
     `).join('');
@@ -688,3 +758,280 @@ function clearHistory() {
     toast('История очищена');
   }
 }
+
+// ==================== MULTIPLAYER ====================
+function showLocalForm() {
+  document.getElementById('local-form').style.display = 'block';
+  document.getElementById('online-form').style.display = 'none';
+}
+
+function showOnlineForm() {
+  document.getElementById('online-form').style.display = 'block';
+  document.getElementById('local-form').style.display = 'none';
+}
+
+function hideAllForms() {
+  document.getElementById('local-form').style.display = 'none';
+  document.getElementById('online-form').style.display = 'none';
+  document.getElementById('join-form').style.display = 'none';
+}
+
+function generateCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function showJoinForm() {
+  document.getElementById('join-form').style.display = 'block';
+}
+
+function hideJoinForm() {
+  document.getElementById('join-form').style.display = 'none';
+}
+
+function createRoom() {
+  const name = document.getElementById('player-name').value.trim() || 'Коуч';
+  currentRoomCode = generateCode();
+  isHost = true;
+  myPlayerNumber = 1;
+
+  db.ref('rooms/' + currentRoomCode).set({
+    host: name,
+    guest: null,
+    status: 'waiting',
+    createdAt: Date.now()
+  }).then(() => {
+    document.getElementById('lobby-code').textContent = currentRoomCode;
+    document.getElementById('lobby-status').textContent = 'Ожидаем второго игрока...';
+    document.getElementById('lobby-players').textContent = `Хост: ${name}`;
+    document.getElementById('btn-start-game').style.display = 'none';
+    showScreen('lobby');
+    listenToRoom(currentRoomCode);
+  }).catch(err => {
+    console.error(err);
+    toast('Ошибка создания комнаты');
+  });
+}
+
+function joinRoom() {
+  const name = document.getElementById('player-name').value.trim() || 'Коуч';
+  const code = document.getElementById('room-code').value.trim().toUpperCase();
+
+  if (!code || code.length < 4) {
+    toast('Введи код комнаты');
+    return;
+  }
+
+  const roomRef = db.ref('rooms/' + code);
+  roomRef.once('value').then(snapshot => {
+    const data = snapshot.val();
+    if (!data) { toast('Комната не найдена'); return; }
+    if (data.guest) { toast('Комната уже заполнена'); return; }
+    if (data.status !== 'waiting') { toast('Игра уже началась'); return; }
+
+    roomRef.update({ guest: name }).then(() => {
+      currentRoomCode = code;
+      isHost = false;
+      myPlayerNumber = 2;
+      document.getElementById('lobby-code').textContent = code;
+      showScreen('lobby');
+      listenToRoom(code);
+    });
+  }).catch(err => {
+    console.error(err);
+    toast('Ошибка входа');
+  });
+}
+
+function listenToRoom(code) {
+  const roomRef = db.ref('rooms/' + code);
+
+  roomRef.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (!data) {
+      toast('Комната была удалена');
+      leaveRoom();
+      return;
+    }
+
+    // ЛОББИ
+    if (data.status === 'waiting') {
+      let playersText = `Хост: ${data.host}`;
+      if (data.guest) playersText += `  •  Гость: ${data.guest}`;
+      document.getElementById('lobby-players').textContent = playersText;
+
+      if (data.guest) {
+        if (isHost) {
+          document.getElementById('lobby-status').textContent = 'Оба игрока в лобби!';
+          document.getElementById('btn-start-game').style.display = 'inline-flex';
+        } else {
+          document.getElementById('lobby-status').textContent = 'Ожидаем, пока хост начнёт игру...';
+          document.getElementById('btn-start-game').style.display = 'none';
+        }
+      }
+    }
+
+    // ЖЕРЕБЬЁВКА
+    if (data.status === 'playing' && data.state) {
+      if (!document.getElementById('screen-coin').classList.contains('active') &&
+          !document.getElementById('screen-draft').classList.contains('active')) {
+        
+        state = data.state;
+        const coin = document.getElementById('coin');
+        coin.classList.remove('flipping');
+        document.querySelector('.coin-front').textContent = '?';
+        document.querySelector('.coin-back').textContent = '?';
+        document.getElementById('coin-result').innerHTML = '<span>Нажми кнопку, чтобы подбросить монетку</span>';
+        document.getElementById('btn-flip').style.display = isHost ? 'inline-flex' : 'none';
+        document.getElementById('btn-flip').disabled = false;
+        document.getElementById('btn-start-draft').style.display = 'none';
+        showScreen('coin');
+      }
+
+      if (data.state.coinFlipped && data.state.firstPlayer) {
+        state.firstPlayer = data.state.firstPlayer;
+        state.currentNominator = data.state.currentNominator;
+        showCoinResult(data.state.firstPlayer);
+      }
+    }
+
+    // ДРАФТ
+    if (data.status === 'draft' && data.state) {
+      const prevNominated = state.nominated ? state.nominated.name : null;
+      state = data.state;
+
+      if (!document.getElementById('screen-draft').classList.contains('active')) {
+        goToDraftScreen();
+      } else {
+        updateUI();
+
+        if (state.nominated && state.nominated.name !== prevNominated) {
+          if (state.showReveal) {
+            const overlay = document.getElementById('reveal-overlay');
+            const nameEl = document.getElementById('reveal-name');
+            nameEl.textContent = state.nominated.name;
+            overlay.classList.add('show');
+
+            setTimeout(() => {
+              overlay.classList.remove('show');
+              document.getElementById('nominated').innerHTML = `<div class="player-card-name">${state.nominated.name}</div>`;
+              document.getElementById('nomination-controls').style.display = 'none';
+              document.getElementById('bid-controls').style.display = 'flex';
+              document.getElementById('current-bid').textContent = `$${state.currentBid || 0}`;
+            }, 2600);
+          } else {
+            document.getElementById('nominated').innerHTML = `<div class="player-card-name">${state.nominated.name}</div>`;
+            document.getElementById('nomination-controls').style.display = 'none';
+            document.getElementById('bid-controls').style.display = 'flex';
+            document.getElementById('current-bid').textContent = `$${state.currentBid || 0}`;
+          }
+        } else if (!state.nominated) {
+          document.getElementById('bid-controls').style.display = 'none';
+          document.getElementById('nomination-controls').style.display = 'block';
+          document.getElementById('nominated').innerHTML = '<div class="empty">Нажми «Вытянуть игрока»</div>';
+          setStatus(`${getName(state.currentNominator)} — вытягивай игрока`);
+        } else {
+          document.getElementById('current-bid').textContent = `$${state.currentBid || 0}`;
+          if (state.phase === 'bidding') {
+            setStatus(`${getName(state.currentBidder)} — твой ход`);
+          }
+        }
+      }
+    }
+
+    // ИГРА ЗАКОНЧЕНА — показываем оверлей выбора победителя
+    if (data.status === 'finished') {
+      if (!document.getElementById('winner-overlay').classList.contains('show')) {
+        endDraft();
+      }
+    }
+
+    // РЕЗУЛЬТАТЫ — оба видят один и тот же экран победы
+    if (data.status === 'results') {
+      if (!document.getElementById('victory-overlay').classList.contains('show')) {
+        showResults(data.winnerSide, data.winnerName);
+      }
+    }
+  });
+}
+
+function leaveRoom() {
+  if (currentRoomCode) {
+    db.ref('rooms/' + currentRoomCode).off();
+    if (isHost) {
+      db.ref('rooms/' + currentRoomCode).remove();
+    } else {
+      db.ref('rooms/' + currentRoomCode).update({ guest: null });
+    }
+  }
+  currentRoomCode = null;
+  isHost = false;
+  myPlayerNumber = 1;
+  showScreen('start');
+  hideAllForms();
+}
+
+function syncState() {
+  if (!currentRoomCode) return;
+  db.ref('rooms/' + currentRoomCode + '/state').set(state);
+}
+
+function startMultiplayerGame() {
+  if (!isHost || !currentRoomCode) return;
+
+  const roomRef = db.ref('rooms/' + currentRoomCode);
+  roomRef.once('value').then(snapshot => {
+    const data = snapshot.val();
+    if (!data || !data.guest) {
+      toast('Второй игрок ещё не подключился');
+      return;
+    }
+
+    const shuffled = [...AVATARS].sort(() => Math.random() - 0.5);
+
+    const newState = {
+      avatar1: shuffled[0],
+      avatar2: shuffled[1],
+      name1: data.host,
+      name2: data.guest,
+      money1: 20,
+      money2: 20,
+      team1: [],
+      team2: [],
+      pool: generatePlayers(),
+      firstPlayer: 1,
+      currentNominator: 1,
+      currentBidder: null,
+      nominated: null,
+      currentBid: 0,
+      bidOwner: null,
+      round: 0,
+      maxRounds: 10,
+      phase: 'nominate',
+      coinFlipped: false,
+      showReveal: false
+    };
+
+    roomRef.update({
+      status: 'playing',
+      state: newState
+    }).then(() => {
+      state = newState;
+    }).catch(err => {
+      console.error(err);
+      toast('Ошибка запуска игры');
+    });
+  });
+}
+
+// Защита от случайной перезагрузки во время игры
+window.addEventListener('beforeunload', (e) => {
+  if (currentRoomCode && 
+     (document.getElementById('screen-draft')?.classList.contains('active') || 
+      document.getElementById('screen-coin')?.classList.contains('active'))) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});

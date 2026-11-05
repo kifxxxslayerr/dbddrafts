@@ -1006,3 +1006,234 @@ h1, h2, h3 {
   background: rgba(125, 211, 252, 0.1);
   border-color: var(--accent);
 }
+/* ===== Улучшенные кнопки стартового экрана ===== */
+.start-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.start-actions .btn {
+  width: 100%;
+  padding: 16px 24px;
+  font-size: 1.05rem;
+  border-radius: 12px;
+  letter-spacing: 0.2px;
+}
+
+.start-actions .btn-lg {
+  background: rgba(125, 211, 252, 0.85);
+  color: #050608;
+  border: none;
+  box-shadow: 0 3px 12px rgba(56, 189, 248, 0.15);
+}
+
+.start-actions .btn-lg:hover {
+  background: rgba(125, 211, 252, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 16px rgba(56, 189, 248, 0.22);
+}
+
+.start-actions .btn-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(125, 211, 252, 0.22);
+  color: var(--text);
+}
+
+.start-actions .btn-secondary:hover {
+  background: rgba(125, 211, 252, 0.1);
+  border-color: rgba(125, 211, 252, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Более аккуратный "made by" */
+.made-by {
+  margin-top: 56px;
+  padding-bottom: 20px;
+  font-size: 0.82rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.made-by:hover {
+  opacity: 1;
+}
+/* ===== Красивые кнопки стартового меню ===== */
+
+.start-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 32px;
+  width: 100%;
+}
+
+.start-actions .btn {
+  width: 100%;
+  padding: 16px 28px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  border-radius: 14px;
+  letter-spacing: 0.3px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Главная кнопка */
+.start-actions .btn-lg {
+  background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 50%, #0ea5e9 100%);
+  color: #050608;
+  border: none;
+  box-shadow: 
+    0 4px 15px rgba(56, 189, 248, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.start-actions .btn-lg:hover {
+  background: linear-gradient(135deg, #a5e0ff 0%, #7dd3fc 50%, #38bdf8 100%);
+  transform: translateY(-3px);
+  box-shadow: 
+    0 8px 25px rgba(56, 189, 248, 0.4),
+    0 3px 8px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.start-actions .btn-lg:active {
+  transform: translateY(-1px);
+}
+
+/* Вторичные кнопки */
+.start-actions .btn-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  color: #e8f4ff;
+  box-shadow: none;
+}
+
+.start-actions .btn-secondary:hover {
+  background: rgba(125, 211, 252, 0.1);
+  border-color: rgba(125, 211, 252, 0.45);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(125, 211, 252, 0.15);
+}
+
+/* История игр — чуть скромнее */
+.start-actions .btn-sm {
+  padding: 12px 20px;
+  font-size: 0.92rem;
+  margin-top: 6px;
+  opacity: 0.85;
+}
+
+.start-actions .btn-sm:hover {
+  opacity: 1;
+}
+.history-winner.draw {
+  color: #fbbf24; /* жёлтый/золотой */
+  font-weight: 600;
+}
+/* Главная кнопка — яркая */
+.start-actions .btn-lg {
+  background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 100%);
+  color: #050608;
+  border: none;
+  box-shadow: 0 4px 18px rgba(56, 189, 248, 0.3);
+}
+
+.start-actions .btn-lg:hover {
+  background: linear-gradient(135deg, #a5e0ff 0%, #7dd3fc 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(56, 189, 248, 0.4);
+}
+
+/* Онлайн — чуть более заметная вторичная */
+.start-actions .btn-secondary:nth-child(2) {
+  background: rgba(125, 211, 252, 0.08);
+  border: 1px solid rgba(125, 211, 252, 0.35);
+  color: #e8f4ff;
+}
+
+.start-actions .btn-secondary:nth-child(2):hover {
+  background: rgba(125, 211, 252, 0.15);
+  border-color: rgba(125, 211, 252, 0.55);
+}
+
+/* История игр — самая спокойная */
+.start-actions .btn-secondary:last-child {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  padding: 13px 24px;
+}
+
+.start-actions .btn-secondary:last-child:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text);
+}
+.history-winner.draw {
+  color: #fbbf24;
+  font-weight: 600;
+}
+/* ===== Стартовые кнопки — нормальная иерархия ===== */
+
+.start-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+/* 1. Главная кнопка */
+.start-actions .btn-lg {
+  background: #5eb8e0;
+  color: #050608;
+  border: none;
+  padding: 15px 24px;
+  font-size: 1.05rem;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(56, 189, 248, 0.2);
+  transition: all 0.2s ease;
+}
+
+.start-actions .btn-lg:hover {
+  background: #6ec8f0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(56, 189, 248, 0.28);
+}
+
+/* 2. Играть онлайн — заметная, но не яркая */
+.start-actions .btn-secondary:nth-of-type(1),
+.start-actions .btn-secondary:first-of-type {
+  background: rgba(125, 211, 252, 0.1);
+  border: 1px solid rgba(125, 211, 252, 0.35);
+  color: #e8f4ff;
+  padding: 14px 24px;
+  border-radius: 12px;
+}
+
+.start-actions .btn-secondary:nth-of-type(1):hover,
+.start-actions .btn-secondary:first-of-type:hover {
+  background: rgba(125, 211, 252, 0.18);
+  border-color: rgba(125, 211, 252, 0.5);
+  transform: translateY(-1px);
+}
+
+/* 3. История игр — самая тихая */
+.start-actions .btn-secondary:last-child {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #7a8fa3;
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  border-radius: 12px;
+}
+
+.start-actions .btn-secondary:last-child:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #c5d4e3;
+}
