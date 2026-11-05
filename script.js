@@ -34,7 +34,7 @@ const NICKNAMES = [
   "La1ron1337","nildon","agur","sayaora","killerax","STIKS","Voytek","NURICK","undead","VKD",
   "alanyan","rese1ve","felix","NIGALOK","Delsiz","sweetplant","DianaDunaeva","qelia","kimi","NON4ME",
   "derice","DOCK","7sec","santajack","METOX","MILLSTON","terrifero3o","mccormick","seth","lyapota",
-  "blaze","DW","improove","kodi","noobasi4","whoam4ik","puperdok","rain4all","formond","ЕЛИСЕЙ",
+  "blaze","DW","improove","kodi","noobasi4","whoam4ik","pyperdok","rain4all","formond","ЕЛИСЕЙ",
   "nightfreddygames","tom tryhard","fairythea","nothing","bor34ka","ishidaharuko","ton1uck","resolution","leoneed","supster",
   "staleks","zlody","difference","kacua72","kexit","ANONIW","t4jit","VShtamm","spiro","aiden",
   "k1rzep","Alkxli","Тритрик","Wenord","Faraday","Ferz","Vexor","haorami","ju","Skipach",
@@ -45,11 +45,34 @@ const NICKNAMES = [
   "bucky","gustavo","delof","B4NDIT","mircht","vobbo","tylion","Outer","noah","Ward",
   "V1","PedroHZ","Obii","silhey","Mad05","MX","ratz","freeze","haze",
   "moon","madeira","leonidas","kure","voidz","ruediger","yujiro","kobj","cartney",
-  "ruyn","neppe","fingerguns","reflection","lonut","aki",
+  "ryun","neppe","fingerguns","reflection","lonut","aki",
   "sinter","uselma","raider","bueay","mirtex","fasti","ptrl","jiggy",
   "palle_loop","ultra","1lmarco","overdose","zynox","daimao",
   "whoyasha", "Куплинов плей", "DmitriyBale", "Kuplinov", "drxkich", "DogeRox"
 ];
+
+// ==================== BANNED WORDS ====================
+const BANNED_WORDS = [
+  "ниггер", "нигер", "нига", "nigger", "nigga", "naga",
+  "пидор", "пидарас", "педик", "гомик", "петух", "faggot", "fag",
+  "хиджаб",
+  "хохол", "хач", "жид", "москаль", "ватник", "сионист",
+  "куколд", "конча",
+  "даун", "аутист", "дебил", "retard", "retarded",
+  "virgin", "девственник",
+  "simp", "симп",
+  "incel", "инцел",
+  "cunt", "пизда", "вагина" 
+];
+
+function isNameBanned(name) {
+  if (!name) return false;
+  const clean = name.toLowerCase().replace(/[^a-zа-яё0-9]/gi, '');
+  return BANNED_WORDS.some(word => {
+    const banned = word.toLowerCase().replace(/[^a-zа-яё0-9]/gi, '');
+    return clean.includes(banned);
+  });
+}
 
 function generatePlayers() {
   const arr = [...NICKNAMES];
@@ -167,8 +190,14 @@ function startGame() {
 
   const n1 = document.getElementById('name1').value.trim() || 'Коуч А';
   const n2 = document.getElementById('name2').value.trim() || 'Коуч Б';
+
   if (n1 === n2) {
     toast('Имена должны отличаться');
+    return;
+  }
+
+  if (isNameBanned(n1) || isNameBanned(n2)) {
+    toast('меняй ник');
     return;
   }
 
@@ -609,13 +638,11 @@ function endDraft() {
     `<div class="team-player"><span>${p.name}</span><span class="cost">$${p.cost}</span></div>`
   ).join('') || '<div class="text-muted">Пусто</div>';
 
-  // Кнопки выбора победителя только у хоста (или в локальной игре)
   const winnerButtons = document.querySelector('.winner-buttons');
   if (winnerButtons) {
     winnerButtons.style.display = (!currentRoomCode || isHost) ? 'flex' : 'none';
   }
 
-  // Гостю пишем, что ждём выбора
   const titleEl = document.querySelector('.winner-box h2');
   if (titleEl) {
     titleEl.textContent = (currentRoomCode && !isHost) 
@@ -631,7 +658,6 @@ function endDraft() {
 }
 
 function chooseWinner(winnerSide) {
-  // Только хост может выбирать
   if (currentRoomCode && !isHost) {
     toast('Победителя выбирает хост');
     return;
@@ -710,7 +736,6 @@ function closeVictory() {
   document.getElementById('victory-overlay').classList.remove('show');
 
   if (currentRoomCode) {
-    // Возвращаем в лобби этой же комнаты
     db.ref('rooms/' + currentRoomCode).update({
       status: 'waiting',
       state: null,
@@ -830,6 +855,12 @@ function hideJoinForm() {
 
 function createRoom() {
   const name = document.getElementById('player-name').value.trim() || 'Коуч';
+
+  if (isNameBanned(name)) {
+    toast('меняй ник');
+    return;
+  }
+
   currentRoomCode = generateCode();
   isHost = true;
   myPlayerNumber = 1;
@@ -855,6 +886,11 @@ function createRoom() {
 function joinRoom() {
   const name = document.getElementById('player-name').value.trim() || 'Коуч';
   const code = document.getElementById('room-code').value.trim().toUpperCase();
+
+  if (isNameBanned(name)) {
+    toast('меняй ник');
+    return;
+  }
 
   if (!code || code.length < 4) {
     toast('Введи код комнаты');
