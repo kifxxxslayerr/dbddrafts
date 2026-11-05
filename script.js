@@ -48,8 +48,7 @@ const NICKNAMES = [
   "ruyn","neppe","fingerguns","reflection","lonut","aki",
   "sinter","uselma","raider","bueay","mirtex","fasti","ptrl","jiggy",
   "palle_loop","ultra","1lmarco","overdose","zynox","daimao",
-  "whoyasha", "Куплинов плей", "DmitriyBale", "Kuplinov", "drxkich",
-  "DogeRox"
+  "whoyasha", "Куплинов плей", "DmitriyBale", "Kuplinov", "drxkich", "DogeRox"
 ];
 
 function generatePlayers() {
@@ -610,6 +609,20 @@ function endDraft() {
     `<div class="team-player"><span>${p.name}</span><span class="cost">$${p.cost}</span></div>`
   ).join('') || '<div class="text-muted">Пусто</div>';
 
+  // Кнопки выбора победителя только у хоста (или в локальной игре)
+  const winnerButtons = document.querySelector('.winner-buttons');
+  if (winnerButtons) {
+    winnerButtons.style.display = (!currentRoomCode || isHost) ? 'flex' : 'none';
+  }
+
+  // Гостю пишем, что ждём выбора
+  const titleEl = document.querySelector('.winner-box h2');
+  if (titleEl) {
+    titleEl.textContent = (currentRoomCode && !isHost) 
+      ? 'Ожидаем, пока хост выберет победителя...' 
+      : 'Определяем победителя';
+  }
+
   document.getElementById('winner-overlay').classList.add('show');
 
   if (currentRoomCode) {
@@ -618,6 +631,12 @@ function endDraft() {
 }
 
 function chooseWinner(winnerSide) {
+  // Только хост может выбирать
+  if (currentRoomCode && !isHost) {
+    toast('Победителя выбирает хост');
+    return;
+  }
+
   let winnerName = winnerSide === 0 ? 'Ничья' : (winnerSide === 1 ? state.name1 : state.name2);
 
   if (currentRoomCode) {
@@ -689,7 +708,25 @@ function showResults(winnerSide, winnerName) {
 
 function closeVictory() {
   document.getElementById('victory-overlay').classList.remove('show');
-  showScreen('results');
+
+  if (currentRoomCode) {
+    // Возвращаем в лобби этой же комнаты
+    db.ref('rooms/' + currentRoomCode).update({
+      status: 'waiting',
+      state: null,
+      winnerSide: null,
+      winnerName: null
+    });
+
+    document.getElementById('lobby-status').textContent = isHost 
+      ? 'Можешь начать новую игру' 
+      : 'Ожидаем, пока хост начнёт новую игру...';
+    
+    document.getElementById('btn-start-game').style.display = isHost ? 'inline-flex' : 'none';
+    showScreen('lobby');
+  } else {
+    showScreen('results');
+  }
 }
 
 // ==================== HISTORY ====================
@@ -732,7 +769,7 @@ function openHistoryDetail(index) {
 
   document.getElementById('hd-title').textContent = `${h.p1} vs ${h.p2}`;
   document.getElementById('hd-date').textContent = h.date;
-  document.getElementById('hd-winner').textContent = `Победил: ${h.winner}`;
+  document.getElementById('hd-winner').textContent = h.winner === 'Ничья' ? 'Ничья' : `Победил: ${h.winner}`;
   document.getElementById('hd-p1').textContent = h.p1;
   document.getElementById('hd-p2').textContent = h.p2;
 
@@ -864,12 +901,15 @@ function listenToRoom(code) {
 
       if (data.guest) {
         if (isHost) {
-          document.getElementById('lobby-status').textContent = 'Оба игрока в лобби!';
+          document.getElementById('lobby-status').textContent = 'Оба игрока в лобби! Можно начинать.';
           document.getElementById('btn-start-game').style.display = 'inline-flex';
         } else {
           document.getElementById('lobby-status').textContent = 'Ожидаем, пока хост начнёт игру...';
           document.getElementById('btn-start-game').style.display = 'none';
         }
+      } else {
+        document.getElementById('lobby-status').textContent = 'Ожидаем второго игрока...';
+        document.getElementById('btn-start-game').style.display = 'none';
       }
     }
 
@@ -941,14 +981,14 @@ function listenToRoom(code) {
       }
     }
 
-    // ИГРА ЗАКОНЧЕНА — показываем оверлей выбора победителя
+    // ИГРА ЗАКОНЧЕНА
     if (data.status === 'finished') {
       if (!document.getElementById('winner-overlay').classList.contains('show')) {
         endDraft();
       }
     }
 
-    // РЕЗУЛЬТАТЫ — оба видят один и тот же экран победы
+    // РЕЗУЛЬТАТЫ
     if (data.status === 'results') {
       if (!document.getElementById('victory-overlay').classList.contains('show')) {
         showResults(data.winnerSide, data.winnerName);
@@ -1026,7 +1066,7 @@ function startMultiplayerGame() {
   });
 }
 
-// Защита от случайной перезагрузки во время игры
+// Защита от случайной перезагрузки
 window.addEventListener('beforeunload', (e) => {
   if (currentRoomCode && 
      (document.getElementById('screen-draft')?.classList.contains('active') || 
